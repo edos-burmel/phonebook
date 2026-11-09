@@ -1,6 +1,27 @@
 import json
 import pytest
-from phonebook import load_book
+from phonebook import load_book, delete_entry
+
+
+@pytest.fixture
+def phonebook():
+    return [
+        {
+            "first_name": "John",
+            "last_name": "Smith",
+            "phone": "0505050505",
+            "city": "Boston",
+            "state": "Massachusetts",
+        },
+        {
+            "first_name": "Smitty",
+            "last_name": "Smith",
+            "phone": "0505050506",
+            "city": "Los-Angeles",
+            "state": "California",
+        },
+    ]
+
 
 def test_load_book(tmp_path):
     expected = [{
@@ -46,3 +67,26 @@ def test_load_book_not_a_list(tmp_path):
         load_book(str(path))
 
     assert str(error.value) == "Очікується JSON-список контактів"
+
+
+def test_delete_entry(monkeypatch, phonebook):
+    monkeypatch.setattr("builtins.input", lambda _: "0505050505")
+
+    delete_entry(phonebook)
+
+    assert len(phonebook) == 1
+    assert phonebook[0]["phone"] == "0505050506"
+
+
+def test_delete_entry_not_found(monkeypatch, capsys, phonebook):
+    before = list(phonebook)
+
+    monkeypatch.setattr("builtins.input", lambda _: "999")
+
+    delete_entry(phonebook)
+
+    captured = capsys.readouterr()
+
+    assert phonebook == before
+
+    assert "Такого номера немає" in captured.out
